@@ -5,6 +5,9 @@ import {
   signInWithEmailAndPassword,
   signOut,
   onAuthStateChanged,
+  updatePassword as firebaseUpdatePassword,
+  EmailAuthProvider,
+  reauthenticateWithCredential
 } from "firebase/auth";
 
 const AuthContext = React.createContext();
@@ -12,6 +15,33 @@ const AuthContext = React.createContext();
 export function useAuth() {
   return useContext(AuthContext);
 }
+
+const reauthenticateUser = async (currentPassword) => {
+  try {
+    const credential = EmailAuthProvider.credential(
+      auth.currentUser.email,
+      currentPassword
+    );
+    await reauthenticateWithCredential(auth.currentUser, credential);
+    console.log("Re-authentication successful!");
+  } catch (error) {
+    console.error("Re-authentication failed:", error.message);
+    throw error;
+  }
+};
+
+const updatePassword = async (newPassword, currentPassword) => {
+  if (auth.currentUser) {
+    try {
+      await reauthenticateUser(currentPassword); // Re-authenticate first
+      await firebaseUpdatePassword(auth.currentUser, newPassword); // Update password
+      console.log("Password updated successfully!");
+    } catch (error) {
+      console.error("Error updating password:", error.message);
+      throw error;
+    }
+  }
+};
 
 export function AuthProvider({ children }) {
   const [currentUser, setCurrentUser] = useState(null);
@@ -22,36 +52,20 @@ export function AuthProvider({ children }) {
       setCurrentUser(user);
       setLoading(false);
     });
+
     return unsubscribe;
   }, []);
 
   const signup = async (email, password) => {
-    try {
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      console.log("User created:", userCredential.user);
-      return userCredential.user;
-    } catch (error) {
-      console.error("Signup failed:", error.message);
-      throw error;
-    }
+    return await createUserWithEmailAndPassword(auth, email, password);
   };
-  
 
   const login = async (email, password) => {
-    try {
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      console.log("User logged in:", userCredential.user);
-      return userCredential.user;
-    } catch (error) {
-      console.error("Login failed:", error.message);
-      throw error;
-    }
+    return await signInWithEmailAndPassword(auth, email, password);
   };
-  
-  
 
-  const logout = () => {
-    return signOut(auth);
+  const logout = async () => {
+    return await signOut(auth);
   };
 
   const value = {
@@ -59,6 +73,7 @@ export function AuthProvider({ children }) {
     signup,
     login,
     logout,
+    updatePassword,
   };
 
   return (
