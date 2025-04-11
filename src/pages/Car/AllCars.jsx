@@ -7,22 +7,51 @@ function AllCars() {
 
   useEffect(() => {
     const fetchCars = async () => {
-      const carsCollection = collection(db, "cars");
-      const carSnapshot = await getDocs(carsCollection);
-      const carList = carSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      const snapshot = await getDocs(collection(db, "cars"));
+      const carList = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
       setCars(carList);
     };
+
     fetchCars();
   }, []);
 
   return (
     <div>
       <h2>Available Cars for Rent</h2>
+      {cars.length === 0 && <p>No cars listed yet.</p>}
+
       {cars.map((car) => (
-        <div key={car.id}>
-          <h3>{car.name} - {car.model}</h3>
-          <img src={car.imageUrl} alt={car.name} style={{ width: "200px", height: "150px" }} />
-          <p>Owner: {car.ownerEmail || "Unknown User"}</p>
+        <div
+          key={car.id}
+          style={{
+            border: "1px solid #ddd",
+            padding: "15px",
+            marginBottom: "20px",
+          }}
+        >
+          <h3>
+            {car.name} - {car.model}
+          </h3>
+          <img
+            src={car.imageUrl}
+            alt={car.name}
+            style={{ width: "200px", height: "150px" }}
+          />
+          <p>
+            <strong>Price:</strong> €{car.price} / day
+          </p>
+          <p>
+            <strong>Location:</strong> {car.location}
+          </p>
+          <p>
+            <strong>Description:</strong> {car.description}
+          </p>
+          <p>
+            <em>Listed by: {car.ownerEmail}</em>
+          </p>
         </div>
       ))}
     </div>

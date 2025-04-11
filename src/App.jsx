@@ -1,3 +1,4 @@
+import Navbar from "./components/Navbar";
 import React from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Login from "./pages/Auth/Login";
@@ -17,7 +18,7 @@ function App() {
     <AuthProvider>
       <Router>
         <div>
-          <h1>Car Rental App with Auth</h1>
+          <Navbar />
           <Routes>
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
