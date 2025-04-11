@@ -4,11 +4,13 @@ import Login from "./pages/Auth/Login";
 import Signup from "./pages/Auth/Signup";
 import Dashboard from "./pages/Dashboard";
 import Profile from "./pages/Profile";
-import RentCar from "./pages/RentCar";
-import ListCar from "./pages/ListCar";
 import { AuthProvider } from "./contexts/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 import UpdateProfile from "./pages/UpdateProfile";
+import ListCar from "./pages/Car/ListCar";
+import RentCar from "./pages/Car/RentCar";
+import AllCars from "./pages/Car/AllCars";
+import MyCars from "./pages/Car/MyCars";
 
 function App() {
   return (
@@ -43,14 +45,7 @@ function App() {
                 </ProtectedRoute>
               }
             />
-            <Route
-              path="/list-car"
-              element={
-                <ProtectedRoute>
-                  <ListCar />
-                </ProtectedRoute>
-              }
-            />
+            <Route path="/list-car" element={<ListCar />} />
             <Route
               path="/update-profile"
               element={
@@ -59,6 +54,9 @@ function App() {
                 </ProtectedRoute>
               }
             />
+            <Route path="/cars" element={<AllCars />} />
+            <Route path="/my-cars" element={<MyCars />} />
+
             <Route
               path="/"
               element={
