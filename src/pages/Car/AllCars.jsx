@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { db } from "../../firebase";
 import { collection, getDocs } from "firebase/firestore";
+import { useNavigate } from "react-router-dom";
 
 function AllCars() {
   const [cars, setCars] = useState([]);
@@ -17,6 +18,7 @@ function AllCars() {
 
     fetchCars();
   }, []);
+  const navigate = useNavigate();
 
   return (
     <div>
@@ -52,6 +54,7 @@ function AllCars() {
           <p>
             <em>Listed by: {car.ownerEmail}</em>
           </p>
+          <button onClick={() => navigate(`/book/${car.id}`)}>Book Now</button>
         </div>
       ))}
     </div>

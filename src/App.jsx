@@ -12,6 +12,8 @@ import ListCar from "./pages/Car/ListCar";
 import RentCar from "./pages/Car/RentCar";
 import AllCars from "./pages/Car/AllCars";
 import MyCars from "./pages/Car/MyCars";
+import Settings from "./pages/Settings";
+import Booking from "./pages/Booking";
 
 function App() {
   return (
@@ -38,6 +40,7 @@ function App() {
                 </ProtectedRoute>
               }
             />
+            <Route path="/settings" element={<Settings />} />
             <Route
               path="/rent"
               element={
@@ -55,6 +58,8 @@ function App() {
                 </ProtectedRoute>
               }
             />
+            <Route path="/book/:id" element={<Booking />} />
+
             <Route path="/cars" element={<AllCars />} />
             <Route path="/my-cars" element={<MyCars />} />
 
