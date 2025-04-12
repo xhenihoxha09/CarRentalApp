@@ -1,5 +1,3 @@
-import DatePicker from "react-datepicker";
-import "react-datepicker/dist/react-datepicker.css";
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { db } from "../firebase";
@@ -19,9 +17,8 @@ function Booking() {
   const navigate = useNavigate();
   const { currentUser } = useAuth();
   const [car, setCar] = useState(null);
-  const [bookedDates, setBookedDates] = useState([]);
-  const [selectedDates, setSelectedDates] = useState([null, null]);
-  const [startDate, endDate] = selectedDates;
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
   const [message, setMessage] = useState("");
 
   useEffect(() => {
@@ -32,26 +29,6 @@ function Booking() {
       }
     };
     fetchCar();
-    const fetchBookedDates = async () => {
-      const q = query(collection(db, "bookings"), where("carId", "==", id));
-      const snapshot = await getDocs(q);
-
-      const dates = [];
-      snapshot.forEach((docSnap) => {
-        const { startDate, endDate } = docSnap.data();
-        const start = startDate.toDate
-          ? startDate.toDate()
-          : new Date(startDate);
-        const end = endDate.toDate ? endDate.toDate() : new Date(endDate);
-
-        for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-          dates.push(new Date(d));
-        }
-      });
-
-      setBookedDates(dates);
-    };
-    fetchBookedDates();
   }, [id]);
 
   const checkOverlap = (start1, end1, start2, end2) => {
@@ -74,12 +51,8 @@ function Booking() {
 
     for (const docSnap of snapshot.docs) {
       const b = docSnap.data();
-      const bookedStart = b.startDate.toDate
-        ? b.startDate.toDate()
-        : new Date(b.startDate);
-      const bookedEnd = b.endDate.toDate
-        ? b.endDate.toDate()
-        : new Date(b.endDate);
+      const bookedStart = new Date(b.startDate);
+      const bookedEnd = new Date(b.endDate);
       if (checkOverlap(newStart, newEnd, bookedStart, bookedEnd)) {
         setMessage("This car is already booked for the selected dates.");
         return;
@@ -91,8 +64,8 @@ function Booking() {
         carId: car.id,
         renterId: currentUser.uid,
         renterEmail: currentUser.email,
-        startDate: new Date(startDate),
-        endDate: new Date(endDate),
+        startDate,
+        endDate,
         createdAt: new Date(),
       });
       setMessage("Booking confirmed!");
@@ -120,36 +93,24 @@ function Booking() {
       </p>
 
       <form onSubmit={handleBooking}>
-        <div style={{ marginBottom: "20px" }}>
-          <label>Select your rental dates:</label>
-          <DatePicker
-            selected={startDate}
-            onChange={(dates) => setSelectedDates(dates)}
-            startDate={startDate}
-            endDate={endDate}
-            selectsRange
-            inline
-            excludeDates={bookedDates}
-            dayClassName={(date) =>
-              bookedDates.some((d) => d.toDateString() === date.toDateString())
-                ? "booked-date"
-                : undefined
-            }
-          />
-        </div>
+        <label>Start Date:</label>
+        <input
+          type="date"
+          value={startDate}
+          onChange={(e) => setStartDate(e.target.value)}
+        />
+
+        <label>End Date:</label>
+        <input
+          type="date"
+          value={endDate}
+          onChange={(e) => setEndDate(e.target.value)}
+        />
 
         <button type="submit">Confirm Booking</button>
       </form>
     </div>
   );
 }
-
-<style>{`
-  .booked-date {
-    background-color: #ffcccc !important;
-    color: red !important;
-    pointer-events: none;
-  }
-`}</style>;
 
 export default Booking;

@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from "react";
 import { db } from "../../firebase";
-import { collection, getDocs } from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
+import { collection, query, where, getDocs } from "firebase/firestore";
+import StarRating from "../../components/StarRating";
 
 function AllCars() {
   const [cars, setCars] = useState([]);
@@ -17,6 +19,16 @@ function AllCars() {
     };
 
     fetchCars();
+    const fetchAverageRating = async (carId) => {
+      const q = query(collection(db, "reviews"), where("carId", "==", carId));
+      const snapshot = await getDocs(q);
+      const ratings = snapshot.docs.map((doc) => doc.data().rating);
+      const avg =
+        ratings.length > 0
+          ? ratings.reduce((a, b) => a + b, 0) / ratings.length
+          : 0;
+      return avg;
+    };
   }, []);
   const navigate = useNavigate();
 
@@ -34,14 +46,12 @@ function AllCars() {
             marginBottom: "20px",
           }}
         >
-          <h3>
-            {car.name} - {car.model}
-          </h3>
-          <img
-            src={car.imageUrl}
-            alt={car.name}
-            style={{ width: "200px", height: "150px" }}
-          />
+          <Link to={`/cars/${car.id}`}>
+            <img src={car.imageUrl} alt={car.name} width="200" />
+            <h3>
+              {car.name}- {car.model}
+            </h3>
+          </Link>
           <p>
             <strong>Price:</strong> €{car.price} / day
           </p>
@@ -54,6 +64,8 @@ function AllCars() {
           <p>
             <em>Listed by: {car.ownerEmail}</em>
           </p>
+          <StarRating carId={car.id} />
+          <Link to={`/cars/${car.id}`}>View Details</Link>
           <button onClick={() => navigate(`/book/${car.id}`)}>Book Now</button>
         </div>
       ))}

@@ -14,6 +14,8 @@ import AllCars from "./pages/Car/AllCars";
 import MyCars from "./pages/Car/MyCars";
 import Settings from "./pages/Settings";
 import Booking from "./pages/Booking";
+import MyBookings from "./pages/MyBookings";
+import CarDetails from "./pages/Car/CarDetails";
 
 function App() {
   return (
@@ -59,9 +61,10 @@ function App() {
               }
             />
             <Route path="/book/:id" element={<Booking />} />
-
+            <Route path="/my-bookings" element={<MyBookings />} />
             <Route path="/cars" element={<AllCars />} />
             <Route path="/my-cars" element={<MyCars />} />
+            <Route path="/cars/:id" element={<CarDetails />} />
 
             <Route
               path="/"

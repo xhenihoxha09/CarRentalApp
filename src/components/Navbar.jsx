@@ -42,6 +42,9 @@ function Navbar() {
         <Link to="/cars" style={styles.link}>
           Browse
         </Link>
+        <Link to="/my-bookings" style={styles.link}>
+          My Bookings
+        </Link>
         <Link to="/my-cars" style={styles.link}>
           My Cars
         </Link>
