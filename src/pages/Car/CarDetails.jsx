@@ -2,11 +2,15 @@ import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "../../firebase";
+import { useAuth } from "../../contexts/AuthContext";
 import ReviewForm from "../../components/ReviewForm";
+import ReviewList from "../../components/ReviewList";
+import MessageForm from "../../components/MessageForm";
 
 function CarDetails() {
   const { id } = useParams();
   const [car, setCar] = useState(null);
+  const { currentUser } = useAuth();
 
   useEffect(() => {
     const fetchCar = async () => {
@@ -36,6 +40,13 @@ function CarDetails() {
       <p>{car.description}</p>
 
       <ReviewForm carId={car.id} />
+      <ReviewList carId={car.id} />
+      {car.owner && currentUser.uid !== car.owner && (
+        <MessageForm carOwnerId={car.owner} carId={car.id} />
+      )}
+      <h3>Contact the owner</h3>
+      <p>Email: {car.ownerEmail}</p>
+      <p>Phone: {car.ownerPhone}</p>
     </div>
   );
 }

@@ -51,6 +51,7 @@ function Navbar() {
         <Link to="/list-car" style={styles.link}>
           List Car
         </Link>
+        <Link to="/messages">Inbox</Link>
 
         {currentUser && (
           <div style={styles.profileContainer}>
