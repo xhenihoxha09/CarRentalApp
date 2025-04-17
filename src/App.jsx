@@ -19,6 +19,7 @@ import Booking from "./pages/Booking";
 import MyBookings from "./pages/MyBookings";
 import CarDetails from "./pages/Car/CarDetails";
 import Messages from "./pages/Messages";
+import Conversation from "./pages/Conversation";
 
 function AppContent() {
   const { currentUser } = useAuth();
@@ -65,6 +66,14 @@ function AppContent() {
           element={
             <ProtectedRoute>
               <Profile />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/messages/:userId"
+          element={
+            <ProtectedRoute>
+              <Conversation />
             </ProtectedRoute>
           }
         />

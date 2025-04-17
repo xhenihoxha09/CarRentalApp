@@ -2,7 +2,8 @@ import React, { useState } from "react";
 import { useAuth } from "../../contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { doc, setDoc } from "firebase/firestore";
-import { db } from "../../firebase";
+import { db, auth } from "../../firebase";
+import { updateProfile } from "firebase/auth";
 import PhoneInput from "react-phone-input-2";
 import "react-phone-input-2/lib/style.css";
 
@@ -18,24 +19,36 @@ function Signup() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    try {
-      setError("");
+    setError("");
 
+    try {
+      // 1. Create Firebase Auth user
       const res = await signup(email, password);
 
+      // 2. Update Firebase Auth profile
+      await updateProfile(auth.currentUser, {
+        displayName: `${firstName} ${lastName}`,
+        photoURL: "",
+      });
+
+      await res.user.reload(); // 🔁 Refresh the Auth user
+      const updatedUser = auth.currentUser; // 👤 Get fresh version
+      console.log("✅ Updated user:", updatedUser.displayName);
+
+      // 3. Save user to Firestore
       await setDoc(doc(db, "users", res.user.uid), {
         uid: res.user.uid,
-        email,
-        name: `${firstName} ${lastName}`,
-        phone,
-        photoURL: res.user.photoURL || null,
+        email: res.user.email,
+        displayName: `${firstName} ${lastName}`,
+        phoneNumber: phone,
+        photoURL: "",
       });
 
       alert("Signed up successfully!");
       navigate("/dashboard");
     } catch (err) {
+      console.error("Signup error:", err);
       setError("Failed to create an account: " + err.message);
-      console.error("Signup error:", err.message);
     }
   };
 
@@ -65,11 +78,11 @@ function Signup() {
         <div>
           <label>Phone Number:</label>
           <PhoneInput
-            country={"al"} // or "us", "gb", etc.
+            country="al"
             value={phone}
-            onChange={(phone) => setPhone(phone)}
+            onChange={setPhone}
             inputStyle={{ width: "100%" }}
-            enableSearch={true}
+            enableSearch
           />
         </div>
         <div>

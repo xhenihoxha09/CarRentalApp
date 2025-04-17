@@ -1,67 +1,111 @@
-import React, { useState } from "react";
-import { useAuth } from "../contexts/AuthContext";
-import { useNavigate } from "react-router-dom";
+import React, { useRef, useState } from "react";
+import { auth, db, storage } from "../firebase";
+import { updateProfile, updateEmail, updatePassword } from "firebase/auth";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { doc, updateDoc } from "firebase/firestore";
 
 function UpdateProfile() {
-  const { currentUser, updateEmail, updatePassword } = useAuth();
-  const [email, setEmail] = useState(currentUser?.email || "");
-  const [newPassword, setNewPassword] = useState("");
-  const [currentPassword, setCurrentPassword] = useState("");
-  const [error, setError] = useState("");
-  const [message, setMessage] = useState("");
-  const navigate = useNavigate();
+  const nameRef = useRef();
+  const phoneRef = useRef();
+  const emailRef = useRef();
+  const passwordRef = useRef();
 
-  const handleUpdate = async (e) => {
+  const [profilePicFile, setProfilePicFile] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState("");
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    setError("");
+    setLoading(true);
     setMessage("");
 
     try {
-      if (email !== currentUser.email) {
-        await updateEmail(email);
+      let photoURL = auth.currentUser.photoURL || "";
+
+      // Upload profile picture if a new one is selected
+      if (profilePicFile) {
+        const fileRef = ref(storage, `profilePictures/${auth.currentUser.uid}`);
+        await uploadBytes(fileRef, profilePicFile);
+        photoURL = await getDownloadURL(fileRef);
       }
-      if (newPassword) {
-        await updatePassword(newPassword, currentPassword);
+
+      // Update email if changed
+      if (emailRef.current.value !== auth.currentUser.email) {
+        await updateEmail(auth.currentUser, emailRef.current.value);
       }
+
+      // Update password if filled
+      if (passwordRef.current.value) {
+        await updatePassword(auth.currentUser, passwordRef.current.value);
+      }
+
+      // Update display name & photo in Firebase Auth
+      await updateProfile(auth.currentUser, {
+        displayName: nameRef.current.value,
+        photoURL,
+      });
+
+      // Update Firestore user record
+      await updateDoc(doc(db, "users", auth.currentUser.uid), {
+        displayName: nameRef.current.value,
+        phoneNumber: phoneRef.current.value,
+        photoURL,
+        email: emailRef.current.value,
+      });
+
       setMessage("Profile updated successfully!");
-    } catch (err) {
-      setError("Failed to update profile: " + err.message);
+    } catch (error) {
+      console.error("Update error:", error.message);
+      setMessage("Failed to update profile: " + error.message);
     }
+
+    setLoading(false);
   };
 
   return (
     <div>
       <h2>Update Profile</h2>
-      {error && <p style={{ color: "red" }}>{error}</p>}
-      {message && <p style={{ color: "green" }}>{message}</p>}
-      <form onSubmit={handleUpdate}>
+      {message && (
+        <p style={{ color: message.includes("Failed") ? "red" : "green" }}>
+          {message}
+        </p>
+      )}
+      <form onSubmit={handleSubmit}>
+        <div>
+          <label>Full Name:</label>
+          <input
+            type="text"
+            ref={nameRef}
+            defaultValue={auth.currentUser.displayName || ""}
+          />
+        </div>
+        <div>
+          <label>Phone:</label>
+          <input type="text" ref={phoneRef} />
+        </div>
         <div>
           <label>Email:</label>
           <input
             type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          />
-        </div>
-        <div>
-          <label>Current Password:</label>
-          <input
-            type="password"
-            value={currentPassword}
-            onChange={(e) => setCurrentPassword(e.target.value)}
+            ref={emailRef}
+            defaultValue={auth.currentUser.email}
           />
         </div>
         <div>
           <label>New Password:</label>
+          <input type="password" ref={passwordRef} />
+        </div>
+        <div>
+          <label>Profile Picture:</label>
           <input
-            type="password"
-            value={newPassword}
-            onChange={(e) => setNewPassword(e.target.value)}
+            type="file"
+            onChange={(e) => setProfilePicFile(e.target.files[0])}
           />
         </div>
-        <button type="submit">Update Profile</button>
+        <button type="submit" disabled={loading}>
+          {loading ? "Updating..." : "Update Profile"}
+        </button>
       </form>
-      <button onClick={() => navigate("/profile")}>Back to Profile</button>
     </div>
   );
 }
