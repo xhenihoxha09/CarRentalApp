@@ -1,157 +1,130 @@
-import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useState, useRef, useEffect } from "react";
+import { FiBell, FiMail, FiSearch } from "react-icons/fi";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 
-function Navbar() {
-  const { currentUser, logout } = useAuth();
+export default function Navbar() {
   const navigate = useNavigate();
+  const { currentUser, logout } = useAuth();
+
   const [dropdownOpen, setDropdownOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
+  const dropdownRef = useRef();
 
-  const handleLogout = async () => {
-    await logout();
-    navigate("/login");
-  };
+  // Close dropdown if clicking outside
+  useEffect(() => {
+    const handler = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setDropdownOpen(false);
+      }
+    };
+    window.addEventListener("mousedown", handler);
+    return () => window.removeEventListener("mousedown", handler);
+  }, []);
 
-  const toggleDropdown = () => {
-    setDropdownOpen(!dropdownOpen);
-  };
-
-  const handleSearch = (e) => {
-    e.preventDefault();
-    navigate(`/cars?search=${searchQuery}`);
-  };
+  // For profile pic fallback
+  const profilePic =
+    currentUser?.photoURL ||
+    "https://ui-avatars.com/api/?name=User&background=EEE&color=2E2E3A";
 
   return (
-    <nav style={styles.navbar}>
-      <Link to="/" style={styles.logo}>
-        CarRental
-      </Link>
+    <nav className="flex items-center px-6 py-3 bg-[#FFFCFF] border-b border-[#CBD4C2]">
+      {/* Logo & Branding */}
+      <div
+        className="flex items-center cursor-pointer"
+        onClick={() => navigate("/cars")}
+      >
+        <span className="text-3xl font-shrikhand font-bold">
+          <span className="text-[#A9FF3A] italic">C</span>
+          <span className="text-[#2E2E3A] italic">RENT</span>
+        </span>
+      </div>
 
-      <form onSubmit={handleSearch} style={styles.searchForm}>
-        <input
-          type="text"
-          placeholder="Search cars..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          style={styles.searchInput}
-        />
-      </form>
+      {/* Search */}
+      <div className="flex flex-1 mx-6">
+        <div className="flex items-center w-full bg-[#FFFCFF] border border-[#CBD4C2] rounded-full px-4 py-2">
+          <input
+            className="flex-1 bg-transparent outline-none text-gray-700"
+            placeholder="Search for cars, locations.."
+          />
+          <FiSearch className="text-[#247BA0] text-xl ml-2" />
+        </div>
+      </div>
 
-      <div style={styles.navLinks}>
-        <Link to="/cars" style={styles.link}>
-          Browse
-        </Link>
-        <Link to="/my-bookings" style={styles.link}>
-          My Bookings
-        </Link>
-        <Link to="/my-cars" style={styles.link}>
-          My Cars
-        </Link>
-        <Link to="/list-car" style={styles.link}>
-          List Car
-        </Link>
-        <Link to="/messages">Inbox</Link>
-
-        {currentUser && (
-          <div style={styles.profileContainer}>
+      {/* Icons */}
+      <div className="flex items-center space-x-6">
+        {/* Inbox Icon */}
+        <button
+          className="text-[#247BA0] hover:text-[#50514F] transition"
+          onClick={() => navigate("/messages")}
+        >
+          <FiMail size={24} />
+        </button>
+        {/* Notification Icon */}
+        <button
+          className="text-[#247BA0] hover:text-[#50514F] transition"
+          onClick={() => navigate("/my-bookings")}
+        >
+          <FiBell size={24} />
+        </button>
+        {/* Profile Dropdown */}
+        <div className="relative" ref={dropdownRef}>
+          <button
+            className="flex items-center focus:outline-none"
+            onClick={() => setDropdownOpen((open) => !open)}
+          >
             <img
-              src={currentUser.photoURL || "https://via.placeholder.com/40"}
+              src={profilePic}
               alt="Profile"
-              style={styles.profilePic}
-              onClick={toggleDropdown}
+              className="w-9 h-9 rounded-full border-2 border-[#247BA0] object-cover"
             />
-            {dropdownOpen && (
-              <div style={styles.dropdown}>
-                <button
-                  onClick={() => navigate("/profile")}
-                  style={styles.dropdownItem}
-                >
-                  Profile
-                </button>
-                <button
-                  onClick={() => navigate("/settings")}
-                  style={styles.dropdownItem}
-                >
-                  Settings
-                </button>
-                <button onClick={handleLogout} style={styles.dropdownItem}>
-                  Logout
-                </button>
-              </div>
-            )}
-          </div>
-        )}
+            <svg
+              className="w-4 h-4 ml-1 text-[#247BA0]"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={2}
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M19 9l-7 7-7-7"
+              />
+            </svg>
+          </button>
+          {dropdownOpen && (
+            <div className="absolute right-0 mt-2 w-40 bg-white rounded-md shadow-lg ring-1 ring-black ring-opacity-5 z-50">
+              <button
+                onClick={() => {
+                  setDropdownOpen(false);
+                  navigate("/profile");
+                }}
+                className="block w-full text-left px-4 py-2 hover:bg-[#CBD4C2]/30 text-[#2E2E3A]"
+              >
+                Profile
+              </button>
+              <button
+                onClick={() => {
+                  setDropdownOpen(false);
+                  navigate("/settings");
+                }}
+                className="block w-full text-left px-4 py-2 hover:bg-[#CBD4C2]/30 text-[#2E2E3A]"
+              >
+                Settings
+              </button>
+              <button
+                onClick={async () => {
+                  setDropdownOpen(false);
+                  await logout();
+                  navigate("/login");
+                }}
+                className="block w-full text-left px-4 py-2 hover:bg-[#A9FF3A]/30 text-[#247BA0] font-bold"
+              >
+                Log out
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     </nav>
   );
 }
-
-const styles = {
-  navbar: {
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "space-between",
-    backgroundColor: "#f5f5f5",
-    padding: "10px 20px",
-    borderBottom: "1px solid #ddd",
-    position: "sticky",
-    top: 0,
-    zIndex: 1000,
-  },
-  logo: {
-    fontSize: "1.5rem",
-    fontWeight: "bold",
-    textDecoration: "none",
-    color: "#333",
-  },
-  navLinks: {
-    display: "flex",
-    alignItems: "center",
-    gap: "20px",
-  },
-  link: {
-    textDecoration: "none",
-    color: "#333",
-  },
-  searchForm: {
-    flex: 1,
-    maxWidth: "400px",
-    margin: "0 20px",
-  },
-  searchInput: {
-    width: "100%",
-    padding: "8px",
-    borderRadius: "4px",
-    border: "1px solid #ccc",
-  },
-  profileContainer: {
-    position: "relative",
-  },
-  profilePic: {
-    width: "40px",
-    height: "40px",
-    borderRadius: "50%",
-    cursor: "pointer",
-  },
-  dropdown: {
-    position: "absolute",
-    right: 0,
-    top: "50px",
-    backgroundColor: "white",
-    boxShadow: "0 0 10px rgba(0,0,0,0.1)",
-    borderRadius: "6px",
-    overflow: "hidden",
-    zIndex: 1000,
-  },
-  dropdownItem: {
-    padding: "10px 15px",
-    background: "none",
-    border: "none",
-    width: "100%",
-    textAlign: "left",
-    cursor: "pointer",
-  },
-};
-
-export default Navbar;
