@@ -9,7 +9,6 @@ import Profile from "./pages/Profile";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 import PublicRoute from "./components/PublicRoute";
-import UpdateProfile from "./pages/UpdateProfile";
 import ListCar from "./pages/Car/ListCar";
 import RentCar from "./pages/Car/RentCar";
 import AllCars from "./pages/Car/AllCars";
@@ -20,6 +19,7 @@ import MyBookings from "./pages/MyBookings";
 import CarDetails from "./pages/Car/CarDetails";
 import Messages from "./pages/Messages";
 import Conversation from "./pages/Conversation";
+import PaymentPage from "./pages/PaymentPage";
 
 function AppContent() {
   const { currentUser } = useAuth();
@@ -102,14 +102,6 @@ function AppContent() {
           }
         />
         <Route
-          path="/update-profile"
-          element={
-            <ProtectedRoute>
-              <UpdateProfile />
-            </ProtectedRoute>
-          }
-        />
-        <Route
           path="/book/:id"
           element={
             <ProtectedRoute>
@@ -157,8 +149,10 @@ function AppContent() {
             </ProtectedRoute>
           }
         />
+        <Route path="/conversation/:userId" element={<Conversation />} />
 
         <Route path="*" element={<h2>Page Not Found</h2>} />
+        <Route path="/payment/:id" element={<PaymentPage />} />
       </Routes>
     </>
   );

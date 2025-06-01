@@ -1,21 +1,22 @@
 import { useState, useEffect, useRef } from "react";
 import { FiBell, FiMail, FiSearch } from "react-icons/fi";
 import { useNavigate } from "react-router-dom";
+import SearchBar from "./SearchBar";
 import { collection, query, where, getDocs } from "firebase/firestore";
 import { db } from "../firebase";
 import { useAuth } from "../contexts/AuthContext";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
 
 export default function Navbar() {
   const navigate = useNavigate();
   const { currentUser, logout } = useAuth();
 
-  // Dropdown states
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const dropdownRef = useRef();
   const notificationsRef = useRef();
 
-  // Bookings
   const [bookings, setBookings] = useState([]);
   const [loadingBookings, setLoadingBookings] = useState(true);
 
@@ -23,7 +24,25 @@ export default function Navbar() {
     currentUser?.photoURL ||
     "https://ui-avatars.com/api/?name=User&background=EEE&color=2E2E3A";
 
-  // Close dropdowns when clicking outside
+  // Search State
+  const [model, setModel] = useState("");
+  const [location, setLocation] = useState("");
+  const [startDate, setStartDate] = useState(null);
+  const [endDate, setEndDate] = useState(null);
+  const [searchOpen, setSearchOpen] = useState(false);
+
+  // Handle search navigation
+  const handleSearch = () => {
+    const query = new URLSearchParams({
+      location,
+      model,
+      startDate: startDate ? startDate.toISOString() : "",
+      endDate: endDate ? endDate.toISOString() : "",
+    });
+    navigate(`/cars?${query.toString()}`);
+    setSearchOpen(false);
+  };
+
   useEffect(() => {
     const handler = (e) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
@@ -80,15 +99,19 @@ export default function Navbar() {
       </div>
 
       {/* Search */}
-      <div className="flex flex-1 mx-6">
-        <div className="flex items-center w-full bg-[#FFFCFF] border border-[#CBD4C2] rounded-full px-4 py-2">
-          <input
-            className="flex-1 bg-transparent outline-none text-gray-700"
-            placeholder="Search for cars, locations.."
-          />
-          <FiSearch className="text-[#247BA0] text-xl ml-2" />
-        </div>
-      </div>
+      <SearchBar
+        model={model}
+        setModel={setModel}
+        location={location}
+        setLocation={setLocation}
+        startDate={startDate}
+        setStartDate={setStartDate}
+        endDate={endDate}
+        setEndDate={setEndDate}
+        searchOpen={searchOpen}
+        setSearchOpen={setSearchOpen}
+        handleSearch={handleSearch}
+      />
 
       {/* Icons */}
       <div className="flex items-center space-x-6">
@@ -120,7 +143,7 @@ export default function Navbar() {
           {notificationsOpen && (
             <div className="absolute right-0 mt-2 w-64 bg-white rounded-md shadow-lg ring-1 ring-black/5 z-50 transition transform origin-top-right scale-95 animate-fadeIn">
               <div className="p-4">
-                <h3 className="text-sm font-semibold text-gray-700 mb-2">
+                <h3 className="text-xs text-sm font-semibold text-gray-700 mb-2">
                   Bookings
                 </h3>
                 {loadingBookings ? (

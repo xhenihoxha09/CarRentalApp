@@ -4,126 +4,96 @@ import {
   query,
   where,
   getDocs,
-  orderBy,
   doc,
   getDoc,
 } from "firebase/firestore";
 import { db } from "../firebase";
 import { useAuth } from "../contexts/AuthContext";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
 function Messages() {
   const { currentUser } = useAuth();
+  const navigate = useNavigate();
   const [conversations, setConversations] = useState([]);
 
   useEffect(() => {
-    const fetchMessages = async () => {
+    const fetchConversations = async () => {
       if (!currentUser) return;
-      try {
-        const q = query(
-          collection(db, "messages"),
-          where("receiverId", "==", currentUser.uid),
-          orderBy("timestamp", "desc")
-        );
-        const snapshot = await getDocs(q);
-        const msgs = snapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
 
-        const grouped = {};
-        for (const msg of msgs) {
-          if (!grouped[msg.senderId]) {
-            const userDoc = await getDoc(doc(db, "users", msg.senderId));
-            const userData = userDoc.exists() ? userDoc.data() : {};
+      const q = query(
+        collection(db, "messages"),
+        where("participants", "array-contains", currentUser.uid)
+      );
 
-            console.log("Fetched user for inbox:", userData);
+      const snapshot = await getDocs(q);
+      const allMessages = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
 
-            grouped[msg.senderId] = {
-              ...msg,
-              senderName:
-                userData.displayName ||
-                userData.name ||
-                userData.email ||
-                msg.senderId,
-              senderPhoto:
-                userData.photoURL && userData.photoURL !== "null"
-                  ? userData.photoURL
-                  : null,
-            };
-          }
+      // Show only 1 message per other user (latest)
+      const latestByUser = {};
+      for (let msg of allMessages.reverse()) {
+        const otherUserId =
+          msg.senderId === currentUser.uid ? msg.receiverId : msg.senderId;
+        if (!latestByUser[otherUserId]) {
+          latestByUser[otherUserId] = msg;
         }
-
-        setConversations(Object.values(grouped));
-      } catch (error) {
-        console.error("Error fetching messages:", error);
       }
+
+      const conversationsArray = [];
+
+      for (let otherUserId in latestByUser) {
+        const msg = latestByUser[otherUserId];
+
+        // ✅ Use document ID to fetch user
+        const userRef = doc(db, "users", otherUserId);
+        const userSnap = await getDoc(userRef);
+        const userData = userSnap.exists() ? userSnap.data() : {};
+
+        conversationsArray.push({
+          id: msg.id,
+          userId: otherUserId,
+          text: msg.message,
+          name: userData.displayName || "User",
+          photoURL:
+            userData.photoURL ||
+            "https://ui-avatars.com/api/?name=" +
+              encodeURIComponent(userData.displayName || "User"),
+        });
+      }
+
+      setConversations(conversationsArray);
     };
 
-    fetchMessages();
+    fetchConversations();
   }, [currentUser]);
 
   return (
-    <div>
-      <h2>Inbox</h2>
+    <div className="p-4">
+      <h2 className="text-2xl font-bold mb-4">Inbox</h2>
       {conversations.length === 0 ? (
-        <p>No messages yet.</p>
+        <p className="text-gray-500">No messages yet.</p>
       ) : (
-        <ul style={{ paddingLeft: 0 }}>
-          {conversations.map((msg) => (
-            <li
-              key={msg.id}
-              style={{
-                listStyle: "none",
-                borderBottom: "1px solid #ccc",
-                marginBottom: "10px",
-                paddingBottom: "10px",
-              }}
+        <div className="space-y-4">
+          {conversations.map((c) => (
+            <div
+              key={c.id}
+              className="flex items-center bg-white rounded-lg shadow p-4 cursor-pointer hover:bg-gray-100"
+              onClick={() => navigate(`/conversation/${c.userId}`)}
             >
-              <Link
-                to={`/messages/${msg.senderId}`}
-                style={{ textDecoration: "none", color: "black" }}
-              >
-                <div
-                  style={{ display: "flex", alignItems: "center", gap: "10px" }}
-                >
-                  {msg.senderPhoto ? (
-                    <img
-                      src={msg.senderPhoto}
-                      alt="User"
-                      style={{
-                        width: "40px",
-                        height: "40px",
-                        borderRadius: "50%",
-                      }}
-                    />
-                  ) : (
-                    <div
-                      style={{
-                        width: "40px",
-                        height: "40px",
-                        borderRadius: "50%",
-                        background: "#ccc",
-                      }}
-                    />
-                  )}
-                  <div>
-                    <strong>From:</strong> {msg.senderName}
-                    <div>
-                      <strong>Latest:</strong>{" "}
-                      {msg.message.length > 50
-                        ? msg.message.slice(0, 50) + "..."
-                        : msg.message}
-                    </div>
-                    <div style={{ fontSize: "12px", color: "gray" }}>
-                      {msg.timestamp?.toDate().toLocaleString()}
-                    </div>
-                  </div>
-                </div>
-              </Link>
-            </li>
+              <img
+                src={c.photoURL}
+                alt={c.name}
+                className="w-10 h-10 rounded-full object-cover mr-4"
+              />
+              <div>
+                <p className="font-semibold">{c.name}</p>
+                <p className="text-gray-600 text-sm truncate">{c.text}</p>
+              </div>
+            </div>
           ))}
-        </ul>
+        </div>
       )}
     </div>
   );

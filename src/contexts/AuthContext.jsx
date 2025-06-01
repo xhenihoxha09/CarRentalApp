@@ -9,7 +9,8 @@ import {
   updateProfile,
 } from "firebase/auth";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { auth, storage } from "../firebase";
+import { auth, storage, db } from "../firebase";
+import { doc, updateDoc } from "firebase/firestore";
 
 const AuthContext = createContext();
 
@@ -46,8 +47,22 @@ export function AuthProvider({ children }) {
     await uploadBytes(fileRef, file);
     const photoURL = await getDownloadURL(fileRef);
     await updateProfile(auth.currentUser, { photoURL });
-    setCurrentUser({ ...auth.currentUser });
+    setCurrentUser({ ...auth.currentUser, photoURL });
     return photoURL;
+  }
+
+  async function updateDisplayName(name) {
+    await updateProfile(auth.currentUser, { displayName: name });
+    setCurrentUser({ ...auth.currentUser, displayName: name });
+  }
+
+  async function updateFirestoreInfo({ displayName, phoneNumber, email }) {
+    const userDocRef = doc(db, "users", auth.currentUser.uid);
+    await updateDoc(userDocRef, {
+      displayName,
+      phoneNumber,
+      email,
+    });
   }
 
   useEffect(() => {
@@ -66,6 +81,8 @@ export function AuthProvider({ children }) {
     updateUserEmail,
     updateUserPassword,
     uploadProfilePicture,
+    updateDisplayName,
+    updateFirestoreInfo,
   };
 
   return (

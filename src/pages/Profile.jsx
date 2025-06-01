@@ -1,101 +1,63 @@
-import React, { useState, useEffect } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
-import { doc, getDoc } from "firebase/firestore";
-import { db } from "../firebase";
 
-function Profile() {
-  const { currentUser, logout, uploadProfilePicture } = useAuth();
-  const [error, setError] = useState("");
-  const [profilePicUrl, setProfilePicUrl] = useState("");
-  const [userData, setUserData] = useState(null);
+export default function Profile() {
+  const { currentUser, logout } = useAuth();
   const navigate = useNavigate();
 
-  useEffect(() => {
-    if (currentUser?.photoURL) {
-      setProfilePicUrl(currentUser.photoURL);
-    }
-
-    const fetchUserData = async () => {
-      if (!currentUser) return;
-      try {
-        const userRef = doc(db, "users", currentUser.uid);
-        const userSnap = await getDoc(userRef);
-        if (userSnap.exists()) {
-          setUserData(userSnap.data());
-        }
-      } catch (err) {
-        console.error("Failed to fetch user data:", err);
-      }
-    };
-
-    fetchUserData();
-  }, [currentUser]);
-
-  const handleLogout = async () => {
-    try {
-      await logout();
-      navigate("/login");
-    } catch {
-      setError("Failed to log out");
-    }
-  };
-
-  const handleProfilePicUpload = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    try {
-      setError("");
-      const url = await uploadProfilePicture(file);
-      setProfilePicUrl(url);
-      alert("Profile picture updated!");
-    } catch (err) {
-      setError("Failed to update profile picture: " + err.message);
-    }
-  };
-
-  const goToRentACar = () => navigate("/rent");
-  const goToListYourCar = () => navigate("/list-car");
-  const goToMyCars = () => navigate("/my-cars");
-  const goToUpdateProfile = () => navigate("/update-profile");
+  const name = currentUser?.displayName || "User Name";
+  const email = currentUser?.email;
+  const phone = currentUser?.phone || "Not Provided";
+  const photo =
+    currentUser?.photoURL ||
+    "https://ui-avatars.com/api/?name=User&background=EEE&color=2E2E3A";
 
   return (
-    <div style={{ maxWidth: "600px", margin: "0 auto", padding: "2rem" }}>
-      <h2>{userData?.displayName || "Not set"}</h2>
-      {error && <p style={{ color: "red" }}>{error}</p>}
+    <div className="flex flex-col items-center justify-center min-h-screen bg-[#FFFCFF] px-6 py-12">
+      <div className="bg-white shadow-xl rounded-xl p-8 max-w-lg w-full text-center">
+        <img
+          src={photo}
+          alt="Profile"
+          className="w-32 h-32 rounded-full border-4 border-[#A9FF3A] object-cover mx-auto"
+        />
+        <h2 className="text-2xl font-bold text-[#2E2E3A] mt-4">{name}</h2>
+        <p className="text-gray-600 mb-1">
+          <strong>Email:</strong> {email}
+        </p>
+        <p className="text-gray-600">
+          <strong>Phone:</strong> {phone}
+        </p>
 
-      {profilePicUrl && (
-        <div>
-          <img
-            src={profilePicUrl}
-            alt="Profile"
-            style={{ width: "100px", height: "100px", borderRadius: "50%" }}
-          />
+        <div className="mt-6 flex flex-wrap justify-center gap-3">
+          <button
+            onClick={() => navigate("/cars")}
+            className="px-4 py-2 rounded-md bg-[#A9FF3A] text-[#2E2E3A] font-semibold shadow-sm hover:bg-[#bfff5a]"
+          >
+            Rent a Car
+          </button>
+          <button
+            onClick={() => navigate("/list-car")}
+            className="px-4 py-2 rounded-md border text-[#2E2E3A] hover:bg-gray-100"
+          >
+            List Your Car
+          </button>
+          <button
+            onClick={() => navigate("/my-cars")}
+            className="px-4 py-2 rounded-md border text-[#2E2E3A] hover:bg-gray-100"
+          >
+            My Cars
+          </button>
+          <button
+            onClick={async () => {
+              await logout();
+              navigate("/login");
+            }}
+            className="px-4 py-2 rounded-md bg-red-100 text-red-600 font-semibold hover:bg-red-200"
+          >
+            Logout
+          </button>
         </div>
-      )}
-
-      <div>
-        <input type="file" onChange={handleProfilePicUpload} />
       </div>
-
-      <div style={{ marginTop: "1rem" }}>
-        <p>
-          <strong>Email:</strong> {currentUser?.email}
-        </p>
-
-        <p>
-          <strong>Phone:</strong> {userData?.phoneNumber || "Not set"}
-        </p>
-      </div>
-
-      <button onClick={goToRentACar}>Rent a Car</button>
-      <button onClick={goToListYourCar}>List Your Car</button>
-      <button onClick={goToMyCars}>My Listed Cars</button>
-      <button onClick={goToUpdateProfile}>Update Profile</button>
-      <button onClick={handleLogout}>Logout</button>
     </div>
   );
 }
-
-export default Profile;
