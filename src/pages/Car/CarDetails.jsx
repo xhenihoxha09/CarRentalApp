@@ -98,8 +98,8 @@ export default function CarDetails() {
 
           {/* Book Button */}
           <button
-            onClick={handleBook}
-            className="bg-[#A9FF3A] text-[#2E2E3A] py-2 px-6 rounded-md font-semibold w-full hover:brightness-90 transition"
+            onClick={() => navigate(`/payment/${car.id}`)}
+            className="bg-[#A9FF3A] text-[#2E2E3A] font-semibold px-4 py-2 rounded hover:bg-[#90e633]"
           >
             Book Now
           </button>

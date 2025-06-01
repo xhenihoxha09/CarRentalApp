@@ -1,103 +1,111 @@
-import { useEffect, useState } from "react";
-import { useParams, useLocation, useNavigate } from "react-router-dom";
+// ✅ src/pages/PaymentPage.jsx
+import React, { useState } from "react";
 import { db } from "../firebase";
-import { doc, getDoc, addDoc, collection } from "firebase/firestore";
+import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { useAuth } from "../contexts/AuthContext";
-import { differenceInDays } from "date-fns";
+import { useNavigate, useParams } from "react-router-dom";
 
 export default function PaymentPage() {
-  const { id } = useParams();
-  const { state } = useLocation(); // contains startDate and endDate
-  const navigate = useNavigate();
   const { currentUser } = useAuth();
+  const navigate = useNavigate();
+  const { carId } = useParams(); // e.g. /payment/carId123
+  const [name, setName] = useState("");
+  const [cardNumber, setCardNumber] = useState("");
+  const [expiry, setExpiry] = useState("");
+  const [cvc, setCVC] = useState("");
+  const [errorMsg, setErrorMsg] = useState("");
+  const [successMsg, setSuccessMsg] = useState("");
 
-  const [car, setCar] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const startDate = new Date(state?.startDate);
-  const endDate = new Date(state?.endDate);
+  const handlePayment = async (e) => {
+    e.preventDefault();
+    setErrorMsg("");
+    setSuccessMsg("");
 
-  useEffect(() => {
-    const fetchCar = async () => {
-      const carRef = doc(db, "cars", id);
-      const carSnap = await getDoc(carRef);
-      if (carSnap.exists()) {
-        setCar({ id: carSnap.id, ...carSnap.data() });
-      }
-      setLoading(false);
-    };
-    fetchCar();
-  }, [id]);
+    if (!name || !cardNumber || !expiry || !cvc) {
+      setErrorMsg("Please fill in all payment fields.");
+      return;
+    }
 
-  const days = differenceInDays(endDate, startDate) || 1;
-  const total = car ? car.price * days : 0;
-
-  const handleConfirmBooking = async () => {
     try {
       await addDoc(collection(db, "bookings"), {
-        carId: car.id,
-        carName: car.name,
-        ownerId: car.ownerId,
-        renterId: currentUser.uid,
-        renterEmail: currentUser.email,
-        startDate: startDate.toISOString(),
-        endDate: endDate.toISOString(),
-        pricePerDay: car.price,
-        total,
-        createdAt: new Date().toISOString(),
+        carId,
+        userId: currentUser.uid,
+        status: "booked",
+        paymentInfo: {
+          name,
+          cardNumber,
+          expiry,
+          cvc,
+        },
+        timestamp: serverTimestamp(),
       });
 
-      alert("Booking successful!");
-      navigate("/profile"); // or wherever you want to redirect after
-    } catch (error) {
-      console.error("Booking failed:", error);
-      alert("Booking failed. Try again.");
+      setSuccessMsg("Payment successful! Your car has been booked.");
+
+      // Optional: wait a second then navigate
+      setTimeout(() => {
+        navigate("/thank-you");
+      }, 1500);
+    } catch (err) {
+      setErrorMsg("Failed to complete booking: " + err.message);
     }
   };
 
-  if (loading) return <div className="p-6">Loading car details...</div>;
-  if (!car) return <div className="p-6 text-red-500">Car not found.</div>;
-
   return (
-    <div className="max-w-3xl mx-auto px-6 py-10">
-      <h2 className="text-2xl font-bold text-[#2E2E3A] mb-6">Confirm & Pay</h2>
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
+      <div className="max-w-md w-full bg-white p-6 rounded-lg shadow-lg">
+        <h2 className="text-2xl font-bold text-center mb-6">Checkout</h2>
 
-      <div className="bg-white shadow-md rounded-xl p-6 space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <img
-            src={car.imageUrl}
-            alt={car.name}
-            className="w-full sm:w-48 h-32 object-cover rounded-md"
+        {errorMsg && <p className="text-red-500 mb-3">{errorMsg}</p>}
+        {successMsg && <p className="text-green-600 mb-3">{successMsg}</p>}
+
+        <form onSubmit={handlePayment} className="space-y-4">
+          <input
+            type="text"
+            placeholder="Name on card"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            className="w-full border px-4 py-2 rounded text-sm"
           />
-          <div className="flex-1">
-            <h3 className="text-xl font-semibold text-[#2E2E3A]">
-              {car.name} — {car.model}
-            </h3>
-            <p className="text-sm text-gray-500">Location: {car.location}</p>
-            <p className="text-sm text-gray-500">€{car.price} / day</p>
+          <input
+            type="text"
+            placeholder="Card number"
+            maxLength={19}
+            value={cardNumber}
+            onChange={(e) =>
+              setCardNumber(
+                e.target.value
+                  .replace(/\D/g, "")
+                  .replace(/(.{4})/g, "$1 ")
+                  .trim()
+              )
+            }
+            className="w-full border px-4 py-2 rounded text-sm"
+          />
+          <div className="flex gap-4">
+            <input
+              type="text"
+              placeholder="MM/YY"
+              value={expiry}
+              onChange={(e) => setExpiry(e.target.value)}
+              className="w-1/2 border px-4 py-2 rounded text-sm"
+            />
+            <input
+              type="text"
+              placeholder="CVC"
+              value={cvc}
+              maxLength={4}
+              onChange={(e) => setCVC(e.target.value.replace(/\D/g, ""))}
+              className="w-1/2 border px-4 py-2 rounded text-sm"
+            />
           </div>
-        </div>
-
-        <div className="border-t pt-4 space-y-2 text-sm text-gray-700">
-          <p>
-            <strong>Check-in:</strong> {startDate.toLocaleDateString()}
-          </p>
-          <p>
-            <strong>Check-out:</strong> {endDate.toLocaleDateString()}
-          </p>
-          <p>
-            <strong>Days:</strong> {days}
-          </p>
-          <p className="text-lg font-bold text-[#2E2E3A]">
-            Total: €{total.toFixed(2)}
-          </p>
-        </div>
-
-        <button
-          onClick={handleConfirmBooking}
-          className="w-full mt-4 bg-[#A9FF3A] text-[#2E2E3A] font-bold py-3 rounded-md hover:opacity-90 transition"
-        >
-          Confirm & Pay
-        </button>
+          <button
+            type="submit"
+            className="w-full bg-[#2E2E3A] text-white py-2 rounded hover:bg-[#1c1c26] text-sm"
+          >
+            Confirm Payment & Book
+          </button>
+        </form>
       </div>
     </div>
   );

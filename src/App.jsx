@@ -20,6 +20,7 @@ import CarDetails from "./pages/Car/CarDetails";
 import Messages from "./pages/Messages";
 import Conversation from "./pages/Conversation";
 import PaymentPage from "./pages/PaymentPage";
+import ThankYouPage from "./pages/ThankYouPage";
 
 function AppContent() {
   const { currentUser } = useAuth();
@@ -152,7 +153,8 @@ function AppContent() {
         <Route path="/conversation/:userId" element={<Conversation />} />
 
         <Route path="*" element={<h2>Page Not Found</h2>} />
-        <Route path="/payment/:id" element={<PaymentPage />} />
+        <Route path="/payment/:carId" element={<PaymentPage />} />
+        <Route path="/thank-you" element={<ThankYouPage />} />
       </Routes>
     </>
   );
